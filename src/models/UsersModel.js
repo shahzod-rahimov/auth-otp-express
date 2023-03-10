@@ -5,6 +5,9 @@ export default async function UsersModel(sequelize, Sequelize) {
       autoIncrement: true,
       primaryKey: true,
     },
+    fullname: {
+      type: Sequelize.DataTypes.STRING,
+    },
     username: {
       type: Sequelize.DataTypes.STRING(20),
       unique: true,
