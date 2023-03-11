@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import otpGenerator from "otp-generator";
 import pg from "../db/db.js";
 import jwt from "../services/JwtService.js";
+import ApiError from "../errors/ApiError.js";
 
 function AddMinutesToDate(date, minutes) {
   return new Date(date.getTime() + minutes * 60000);
@@ -39,21 +40,30 @@ const dates = {
 
 async function createUserAccount(req, res) {
   try {
-    const { fullname, username, phone_number } = req.body;
+    const { username, fullname, phone_number } = req.body;
+
     const db = await pg();
 
     const isUsernameExisted = await db.users.findOne({ where: { username } });
     const isNumberExisted = await db.users.findOne({ where: { phone_number } });
 
     if (isUsernameExisted) {
-      return res.status(400).send({ msg: "Username already exists!" });
+      return ApiError.error(res, {
+        friendlyMsg: "Username already exists!",
+      });
     }
 
     if (isNumberExisted) {
-      return res.status(400).send({ msg: "Phone number already exists!" });
+      return ApiError.error(res, {
+        friendlyMsg: "Phone number already exists!",
+      });
     }
 
-    const user = await db.users.create({ fullname, username, phone_number });
+    const user = await db.users.create({
+      fullname: fullname,
+      username: username,
+      phone_number: phone_number,
+    });
 
     // Generate OTP
     const otp = otpGenerator.generate(4, {
@@ -82,8 +92,10 @@ async function createUserAccount(req, res) {
 
     res.status(201).send({ verification_key: encoded });
   } catch (error) {
-    console.log(error);
-    res.status(500).send({ msg: "Server error" });
+    return ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Server Error",
+    });
   }
 }
 
@@ -106,9 +118,9 @@ async function verifyUserOtp(req, res) {
     const check_obj = obj.check;
 
     if (check_obj != check) {
-      return res
-        .status(400)
-        .send({ msg: "OTP was not sent to this particular phone number" });
+      return ApiError.error(res, {
+        friendlyMsg: "OTP was not sent to this particular phone number",
+      });
     }
     let params = {
       id: obj.otp_id,
@@ -146,20 +158,22 @@ async function verifyUserOtp(req, res) {
 
             return res.status(200).send(tokens);
           } else {
-            return res.status(400).send({ msg: "OTP NOT Matched" });
+            return ApiError.error(res, { friendlyMsg: "OTP NOT Matched" });
           }
         } else {
-          return res.status(400).send({ msg: "OTP Expired" });
+          return ApiError.error(res, { friendlyMsg: "OTP Expired" });
         }
       } else {
-        return res.status(400).send({ msg: "OTP Already Used" });
+        return ApiError.error(res, { friendlyMsg: "OTP Already Used" });
       }
     } else {
-      return res.status(400).send({ msg: "Bad Request" });
+      return ApiError.error(res, { friendlyMsg: "Bad Request" });
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).send({ msg: "Server error" });
+    return ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Server Error",
+    });
   }
 }
 

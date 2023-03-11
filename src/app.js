@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import pg from "./db/db.js";
 import { router } from "./routes/index.routes.js";
+import errorHandler from "./middlewares/ErrorHandlingMiddleware.js";
 
 dotenv.config();
 
@@ -12,6 +13,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+app.use(errorHandler);
 
 async function start() {
   try {
