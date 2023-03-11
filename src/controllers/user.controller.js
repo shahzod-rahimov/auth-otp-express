@@ -231,4 +231,45 @@ async function loginUserAccount(req, res) {
   }
 }
 
-export { createUserAccount, verifyUserOtp, loginUserAccount };
+async function changeUserPhoneNumber(req, res) {
+  try {
+    const { old_phone_number, new_phone_number } = req.body;
+
+    const user = await UsersModel.findOne({
+      where: { phone_number: old_phone_number },
+    });
+
+    if (!user) {
+      return ApiError.notFound(res, {
+        friendlyMsg: "User not found",
+      });
+    }
+
+    const isNewNumberExists = await UsersModel.findOne({
+      where: { phone_number: new_phone_number },
+    });
+
+    if (isNewNumberExists) {
+      return ApiError.error(res, {
+        friendlyMsg: "Phone number already exists",
+      });
+    }
+
+    user.phone_number = new_phone_number;
+    await user.save();
+
+    res.status(200).send({ friendlyMsg: "Phone number successfully changed" });
+  } catch (error) {
+    return ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Server error",
+    });
+  }
+}
+
+export {
+  createUserAccount,
+  verifyUserOtp,
+  loginUserAccount,
+  changeUserPhoneNumber,
+};

@@ -32,8 +32,18 @@ const userLoginValidation = Joi.object({
     .message("Phone number is invalid! Example phone number 998991234567"),
 });
 
+const usesChangePhoneNumber = Joi.object({
+  old_phone_number: Joi.string()
+    .pattern(new RegExp(/^998[389][012345789][0-9]{7}$/))
+    .message("Phone number is invalid! Example phone number 998991234567"),
+  new_phone_number: Joi.string()
+    .pattern(new RegExp(/^998[389][012345789][0-9]{7}$/))
+    .message("Phone number is invalid! Example phone number 998991234567"),
+});
+
 export default {
   userSignUpValidation,
   userVerifyValidation,
   userLoginValidation,
+  usesChangePhoneNumber,
 };
