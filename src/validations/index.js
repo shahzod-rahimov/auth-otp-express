@@ -26,4 +26,14 @@ const userVerifyValidation = Joi.object({
     .message("Phone number is invalid! Example phone number 998991234567"),
 });
 
-export default { userSignUpValidation, userVerifyValidation };
+const userLoginValidation = Joi.object({
+  phone_number: Joi.string()
+    .pattern(new RegExp(/^998[389][012345789][0-9]{7}$/))
+    .message("Phone number is invalid! Example phone number 998991234567"),
+});
+
+export default {
+  userSignUpValidation,
+  userVerifyValidation,
+  userLoginValidation,
+};

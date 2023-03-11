@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createUserAccount,
+  loginUserAccount,
   verifyUserOtp,
 } from "../controllers/user.controller.js";
 
@@ -14,5 +15,6 @@ userRouter.post(
   createUserAccount
 );
 userRouter.post("/verify", Validator("userVerifyValidation"), verifyUserOtp);
+userRouter.post("/signin", Validator("userLoginValidation"), loginUserAccount);
 
 export { userRouter };

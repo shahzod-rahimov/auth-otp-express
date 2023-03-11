@@ -180,4 +180,55 @@ async function verifyUserOtp(req, res) {
   }
 }
 
-export { createUserAccount, verifyUserOtp };
+async function loginUserAccount(req, res) {
+  try {
+    const { phone_number } = req.body;
+
+    const user = await UsersModel.findOne({
+      where: { phone_number },
+    });
+
+    if (!user) {
+      return ApiError.notFound(res, {
+        friendlyMsg: "User not found",
+      });
+    }
+
+    const otp = otpGenerator.generate(4, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+
+    const now = new Date();
+    const expiration_time = AddMinutesToDate(now, 3);
+
+    const newOtp = await OTPModel.create({
+      id: uuidv4(),
+      otp,
+      expiration_time,
+    });
+
+    user.otp_id = newOtp.dataValues.id;
+    await user.save();
+
+    const details = {
+      timestamp: now,
+      check: phone_number,
+      success: true,
+      message: "OTP sent to user",
+      otp_id: newOtp.dataValues.id,
+    };
+
+    const encoded = await encode(JSON.stringify(details));
+
+    res.status(201).send({ verification_key: encoded });
+  } catch (error) {
+    return ApiError.internal(res, {
+      message: error,
+      friendlyMsg: "Server error",
+    });
+  }
+}
+
+export { createUserAccount, verifyUserOtp, loginUserAccount };
