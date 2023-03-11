@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import pg from "./db/db.js";
 import { router } from "./routes/index.routes.js";
 import errorHandler from "./middlewares/ErrorHandlingMiddleware.js";
+import sequelize from "./db/db.js";
 
 dotenv.config();
 
@@ -18,7 +19,9 @@ app.use(errorHandler);
 
 async function start() {
   try {
-    await pg();
+    sequelize.authenticate();
+    sequelize.sync();
+    console.log("Connection has been established successfully.");
 
     app.listen(PORT, () => console.log(`Server running on ${PORT}`));
   } catch (error) {

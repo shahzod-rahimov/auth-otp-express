@@ -1,9 +1,10 @@
 import { encode, decode } from "../services/crypt.js";
 import { v4 as uuidv4 } from "uuid";
 import otpGenerator from "otp-generator";
-import pg from "../db/db.js";
 import jwt from "../services/JwtService.js";
 import ApiError from "../errors/ApiError.js";
+import { UsersModel } from "../models/UsersModel.js";
+import { OTPModel } from "../models/OTPModel.js";
 
 function AddMinutesToDate(date, minutes) {
   return new Date(date.getTime() + minutes * 60000);
@@ -42,10 +43,10 @@ async function createUserAccount(req, res) {
   try {
     const { username, fullname, phone_number } = req.body;
 
-    const db = await pg();
-
-    const isUsernameExisted = await db.users.findOne({ where: { username } });
-    const isNumberExisted = await db.users.findOne({ where: { phone_number } });
+    const isUsernameExisted = await UsersModel.findOne({ where: { username } });
+    const isNumberExisted = await UsersModel.findOne({
+      where: { phone_number },
+    });
 
     if (isUsernameExisted) {
       return ApiError.error(res, {
@@ -59,7 +60,7 @@ async function createUserAccount(req, res) {
       });
     }
 
-    const user = await db.users.create({
+    const user = await UsersModel.create({
       fullname: fullname,
       username: username,
       phone_number: phone_number,
@@ -75,7 +76,11 @@ async function createUserAccount(req, res) {
     const now = new Date();
     const expiration_time = AddMinutesToDate(now, 3);
 
-    const newOtp = await db.otp.create({ id: uuidv4(), otp, expiration_time });
+    const newOtp = await OTPModel.create({
+      id: uuidv4(),
+      otp,
+      expiration_time,
+    });
 
     user.otp_id = newOtp.dataValues.id;
     await user.save();
@@ -103,8 +108,6 @@ async function verifyUserOtp(req, res) {
   try {
     const { verification_key, otp, check } = req.body;
 
-    const db = await pg();
-
     var currentdate = new Date();
     let decoded;
     try {
@@ -126,7 +129,7 @@ async function verifyUserOtp(req, res) {
       id: obj.otp_id,
     };
 
-    const otpResult = await db.otp.findOne({ where: { id: params.id } });
+    const otpResult = await OTPModel.findOne({ where: { id: params.id } });
     const result = otpResult.dataValues;
 
     if (result != null) {
@@ -142,11 +145,11 @@ async function verifyUserOtp(req, res) {
               verified: true,
             };
 
-            await db.otp.update(
+            await OTPModel.update(
               { verified: params_verified.verified },
               { where: { id: params_verified.id } }
             );
-            const clientResult = await db.users.findOne({
+            const clientResult = await UsersModel.findOne({
               where: { phone_number: check },
             });
 
